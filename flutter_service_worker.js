@@ -2,7 +2,6 @@
 const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
-
 const RESOURCES = {"assets/AssetManifest.bin": "0e3ad3860786a925d4f5c2042fb7765e",
 "assets/AssetManifest.json": "d19118bfe356f4d16c387fc780e2f5cf",
 "assets/assets/fonts/HindSiliguri-Bold.ttf": "09e7451bd892e6af09275b701369b454",
@@ -39,8 +38,6 @@ const RESOURCES = {"assets/AssetManifest.bin": "0e3ad3860786a925d4f5c2042fb7765e
 "main.dart.js": "b8f6f0808c115bc9a8662322d6d1b74f",
 "manifest.json": "347a8df2b44272c7ed34d0d3848a75d7",
 "version.json": "ba8674f7d3e388907cd8ebf593789357"};
-// The application shell files that are downloaded before a service worker can
-// start.
 const CORE = ["main.dart.js",
 "index.html",
 "assets/AssetManifest.json",
@@ -56,9 +53,6 @@ self.addEventListener("install", (event) => {
     })
   );
 });
-// During activate, the cache is populated with the temp files downloaded in
-// install. If this service worker is upgrading from one with a saved
-// MANIFEST, then use this to retain unchanged resource files.
 self.addEventListener("activate", function(event) {
   return event.waitUntil(async function() {
     try {
@@ -87,28 +81,19 @@ self.addEventListener("activate", function(event) {
         var key = request.url.substring(origin.length + 1);
         if (key == "") {
           key = "/";
-        }
-        // If a resource from the old manifest is not in the new cache, or if
-        // the MD5 sum has changed, delete it. Otherwise the resource is left
-        // in the cache and can be reused by the new service worker.
-        if (!RESOURCES[key] || RESOURCES[key] != oldManifest[key]) {
+        }  if (!RESOURCES[key] || RESOURCES[key] != oldManifest[key]) {
           await contentCache.delete(request);
         }
-      }
-      // Populate the cache with the app shell TEMP files, potentially overwriting
-      // cache files preserved above.
+      } 
       for (var request of await tempCache.keys()) {
         var response = await tempCache.match(request);
         await contentCache.put(request, response);
       }
       await caches.delete(TEMP);
-      // Save the manifest to make future upgrades efficient.
       await manifestCache.put('manifest', new Response(JSON.stringify(RESOURCES)));
-      // Claim client to enable caching on first launch
       self.clients.claim();
       return;
     } catch (err) {
-      // On an unhandled exception the state of the cache cannot be guaranteed.
       console.error('Failed to upgrade service worker: ' + err);
       await caches.delete(CACHE_NAME);
       await caches.delete(TEMP);
@@ -116,8 +101,6 @@ self.addEventListener("activate", function(event) {
     }
   }());
 });
-// The fetch handler redirects requests for RESOURCE files to the service
-// worker cache.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== 'GET') {
     return;
@@ -167,8 +150,6 @@ self.addEventListener('message', (event) => {
     return;
   }
 });
-// Download offline will check the RESOURCES for all files not in the cache
-// and populate them.
 async function downloadOffline() {
   var resources = [];
   var contentCache = await caches.open(CACHE_NAME);
@@ -187,8 +168,6 @@ async function downloadOffline() {
   }
   return contentCache.addAll(resources);
 }
-// Attempt to download the resource online before falling back to
-// the offline cache.
 function onlineFirst(event) {
   return event.respondWith(
     fetch(event.request).then((response) => {
